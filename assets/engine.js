@@ -1,8 +1,8 @@
 // ascii-art scene engine. Draws a dot-lattice figure plus effect layers from window.SCENE onto <canvas id="c">.
 // Every motion is periodic in LOOP seconds (seamless loop); an optional INTRO plays once before the loop.
 // render(tt) takes absolute seconds; with window.MANUAL = true the page does not self-animate.
-(() => {
-const SC = window.SCENE, MAP = SC.figure.map, LAT = SC.lattice;
+window.createDotScene = function (SC, canvas, manual = true) {
+const MAP = SC.figure.map, LAT = SC.lattice;
 const [W, H] = SC.size || [1920, 1080], LOOP = SC.loop || 8, INTRO = SC.intro || 0;
 let seed = SC.seed || 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -45,8 +45,8 @@ function addPart(src, x, y, r, big, red, cyc, color, speed) {
   parts.push(p); return p;
 }
 
-const cv = document.getElementById('c'), g = cv.getContext('2d');
-const dpr = window.MANUAL ? 1 : Math.min(2, window.devicePixelRatio || 1);
+const cv = canvas, g = cv.getContext('2d');
+const dpr = manual ? 1 : Math.min(2, window.devicePixelRatio || 1);
 cv.width = W * dpr; cv.height = H * dpr; g.scale(dpr, dpr);
 const col = (c, a) => `rgb(${BG.map((b, k) => Math.round(b + (c[k] - b) * a)).join(',')})`;
 function dot(x, y, r, c, a) { if (a <= 0.015) return; g.fillStyle = col(c, Math.min(1, a)); g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); }
@@ -122,13 +122,15 @@ const make = {
   },
   // dots of the figure peel off into the wind; more from the windward edge
   dust(o) {
+    const dustColor = o.color ? hex(o.color) : null;
     const [c0, c1] = Array.isArray(o.region) ? o.region : [o.region.center[0] - o.region.radius[0], o.region.center[0] + o.region.radius[0]];
     for (const d of dots) {
       if (!inRegion(d, o.region)) continue;
+      if (o.mask && o.mask.bits[Math.min(63, Math.floor((d.j + 0.5) / o.mask.rows * 64)) * 64 + Math.min(63, Math.floor((d.i + 0.5) / o.mask.columns * 64))] !== '1') continue;
       const edge = WDIR[0] < 0 ? d.i - c0 : c1 - d.i;
       const w = Math.min(1, Math.max(0, 1 - edge / (c1 - c0 + 1))) ** 1.2;
       const n = rnd() < (0.2 + 0.8 * w) * (o.density ?? 1) ? 1 + Math.floor(rnd() * (1 + 3 * w)) : 0;
-      for (let k = 0; k < n; k++) d.parts.push(addPart(d, d.x + (rnd() - 0.5) * 3, d.y + (rnd() - 0.5) * 3, d.r, d.big, rnd() < (o.red ?? 0.035)));
+      for (let k = 0; k < n; k++) d.parts.push(addPart(d, d.x + (rnd() - 0.5) * 3, d.y + (rnd() - 0.5) * 3, d.r, d.big, rnd() < (o.red ?? 0.035), null, dustColor));
     }
     return {};
   },
@@ -521,12 +523,17 @@ function drawParts(tt, t) {
   }
 }
 
-window.LOOP = LOOP; window.INTRO = INTRO;
-window.render = function (tt) {
+function render(tt) {
   const t = (((tt - INTRO) % LOOP) + LOOP) % LOOP, T = t / LOOP * TAU;
   g.fillStyle = `rgb(${BG})`; g.fillRect(0, 0, W, H);
   for (const l of L) if (l.draw) l.draw(tt, t, T);
   drawParts(tt, t);
+}
+return { render, loop: LOOP, intro: INTRO };
 };
-if (!window.MANUAL) { const t0 = performance.now(); const f = (now) => { render((now - t0) / 1000); requestAnimationFrame(f); }; requestAnimationFrame(f); }
-})();
+// Keep generated CLI pages and frame capture compatible with the original API.
+if (window.SCENE) {
+  const scene = window.createDotScene(window.SCENE, document.getElementById('c'), !!window.MANUAL);
+  window.LOOP = scene.loop; window.INTRO = scene.intro; window.render = scene.render;
+  if (!window.MANUAL) { const t0 = performance.now(); const f = (now) => { scene.render((now - t0) / 1000); requestAnimationFrame(f); }; requestAnimationFrame(f); }
+}

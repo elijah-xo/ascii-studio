@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Dot Studio — Portraits &amp; motion</title>
+  <link rel="stylesheet" href="/static/studio.css">
+  <script src="/engine.js" defer></script>
+  <script src="/static/studio.js" type="module"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="header-start">
+      <a class="brand" href="/" aria-label="Dot Studio home"><span class="brandmark" aria-hidden="true">⠿</span> DOT<span class="brand-light">STUDIO</span></a>
+      <div class="view-switch" role="group" aria-label="Workspace"><button id="portrait-workspace" aria-pressed="true">Portrait</button><button id="animation-workspace" aria-pressed="false">Animate</button></div>
+    </div>
+    <div class="header-actions">
+      <details id="save-menu" class="save-explainer">
+        <summary><span id="work-save-state" role="status" aria-live="polite" data-state="idle">Getting ready</span><span class="menu-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="header-popover"><strong>Your work</strong><p id="work-save-detail"></p><p>A project file keeps your photo, portrait, and animation together. Image, video, and settings downloads are separate exports.</p><p>Optional session recovery keeps one copy in this browser. Wait for “Saved in this browser” before leaving.</p><button id="show-recovery" class="utility-button">Open session recovery</button></div>
+      </details>
+      <button id="save-project-top" class="utility-button" aria-label="Save project" disabled><span class="save-full-label">Save project</span><span class="save-short-label" aria-hidden="true">Save</span><span aria-hidden="true">↓</span></button>
+      <details id="settings-menu" class="header-menu">
+        <summary aria-label="Settings menu"><span class="settings-label">Settings</span><span class="settings-icon" aria-hidden="true">•••</span></summary>
+        <div class="header-popover"><strong>Settings</strong><p>Keep or reuse your controls without including the photo.</p><button id="load-settings" class="utility-button">Load settings…</button><button id="save-settings" class="utility-button">Download settings ↓</button></div>
+      </details>
+    </div>
+    <input id="settings-file" type="file" accept=".json,application/json" hidden>
+    <input id="project-file" type="file" accept=".dotstudio,.json,application/json" hidden>
+  </header>
+  <div id="recovery-offer" class="recovery-offer" hidden><p>A saved session is available in this browser. Restore it to replace the current canvas with its photo and settings, or clear the stored copy.</p><button id="restore-session" class="utility-button">Restore saved session</button><button id="discard-session" class="utility-button">Clear saved session</button></div>
+  <main class="workspace">
+    <aside id="source-controls" class="panel controls" aria-label="Photo and conversion controls">
+      <div class="panel-heading"><span class="eyebrow">01 — SOURCE</span><button id="reset" class="text-button">Reset controls</button></div>
+      <button id="upload" class="upload-card"><span class="upload-icon" aria-hidden="true">↥</span><strong>Bring your own image</strong><span>Choose a file or drop it anywhere</span><small>JPG, PNG, WEBP · UP TO 12 MB</small></button>
+      <input id="file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      <p id="filename" class="file-note">Exploring with the included bust.</p>
+      <div class="project-actions"><button id="open-project" class="utility-button">Open project</button><button id="save-project" class="utility-button" disabled>Save project ↓</button></div>
+      <p class="hint">Projects include your photo and both workspaces. Store them privately.</p>
+      <details id="recovery-options" class="control-guide"><summary>Session recovery</summary>
+        <label class="check-label"><input id="remember-session" type="checkbox"> Remember this session in this browser</label>
+        <p class="hint">Off by default. Includes your original photo and metadata. Anyone using this browser profile may restore it. After a refresh, choose Restore saved session in the banner. Clearing removes the browser copy and keeps your open artwork.</p>
+        <p id="recovery-status" class="hint" role="status">Save a project for a portable backup.</p>
+        <button id="clear-session" class="utility-button">Clear stored session</button>
+      </details>
+
+      <fieldset id="animation-controls" hidden>
+        <legend class="eyebrow">02 — DUST &amp; WIND</legend>
+        <p class="hint">Choose where the portrait dissolves, then bring it to life.</p>
+        <div class="motion-presets" role="group" aria-label="Motion presets"><button class="utility-button" data-motion="gentle">Gentle drift</button><button class="utility-button" data-motion="wind">Strong wind</button><button class="utility-button" data-motion="dissolve">Slow dissolve</button></div>
+        <p class="hint">Presets keep your dust selection. Undo restores the previous motion.</p>
+        <label class="range-label" for="duration">Loop duration <output id="duration-value">8 seconds</output></label><input id="duration" type="range" min="2" max="12" step="1" value="8">
+        <label class="range-label" for="windAngle">Wind direction <output id="windAngle-value">−160°</output></label><input id="windAngle" type="range" min="-180" max="180" step="5" value="-160">
+        <p class="hint">0° → right · −90° ↑ up · ±180° ← left</p><button id="reverse-wind" class="utility-button">Reverse wind ↔</button>
+        <label class="range-label" for="windStrength">Wind strength <output id="windStrength-value">1.00×</output></label><input id="windStrength" type="range" min="0.25" max="3" step="0.05" value="1">
+        <label class="range-label" for="dustDensity">Dust amount <output id="dustDensity-value">65%</output></label><input id="dustDensity" type="range" min="0" max="1" step="0.05" value="0.65">
+        <label class="check-label"><input id="dustTint" type="checkbox"> Use custom dust color</label><label class="range-label" for="dustColor">Dust color</label><input id="dustColor" type="color" value="#f2f2f0"><p class="hint">Off uses the portrait tones with rare crimson streaks. Choosing a color tints all dust.</p>
+        <div class="section-rule"></div><span class="eyebrow">03 — DUST AREA</span>
+        <p class="hint">Draw a rectangle, then refine it with Brush or Erase. Selection overlays are never exported.</p>
+        <label class="range-label" for="selection-tool">Selection tool</label><select id="selection-tool"><option value="rectangle">Rectangle</option><option value="brush">Brush</option><option value="erase">Erase</option></select>
+        <label class="range-label" for="brush-size">Brush radius <output id="brush-size-value">6%</output></label><input id="brush-size" type="range" min="2" max="20" step="1" value="6">
+        <button id="select-region" class="secondary-button" aria-pressed="false">Draw dust area ↗</button>
+        <button id="whole-region" class="text-button">Use the whole figure</button>
+        <button id="clear-region" class="text-button">Clear dust selection</button>
+        <p class="hint">Tab into the selection canvas: arrows move the brush, Space paints, Escape finishes. Rectangle sliders replace a painted selection.</p>
+        <input id="dustMask" type="hidden" value="">
+        <div class="paired-controls"><div><label class="range-label" for="dustLeft">Left</label><input id="dustLeft" type="range" min="0" max="0.99" step="0.01" value="0"></div><div><label class="range-label" for="dustRight">Right</label><input id="dustRight" type="range" min="0.01" max="1" step="0.01" value="0.6"></div></div>
+        <div class="paired-controls"><div><label class="range-label" for="dustTop">Top</label><input id="dustTop" type="range" min="0" max="0.99" step="0.01" value="0.1"></div><div><label class="range-label" for="dustBottom">Bottom</label><input id="dustBottom" type="range" min="0.01" max="1" step="0.01" value="0.9"></div></div>
+        <p id="region-summary" class="hint"></p>
+      </fieldset>
+      <fieldset id="photo-controls" disabled>
+        <legend class="eyebrow">02 — FRAME</legend>
+        <p class="hint">Drag the Source preview to position your photo. The sliders work with a keyboard too.</p>
+        <label class="range-label" for="zoom">Zoom <output id="zoom-value">1.00×</output></label><input id="zoom" type="range" min="1" max="3" step="0.05" value="1">
+        <div class="paired-controls"><div><label class="range-label" for="x">Horizontal</label><input id="x" type="range" min="0" max="1" step="0.01" value="0.5"></div><div><label class="range-label" for="y">Vertical</label><input id="y" type="range" min="0" max="1" step="0.01" value="0.5"></div></div>
+        <div class="section-rule"></div><span class="eyebrow">03 — TRANSLATE</span>
+        <details class="control-guide"><summary>What do these controls do?</summary><dl>
+          <dt>Detail</dt><dd id="detail-help">More rows create finer dots. Try 32 for a bold avatar or 72 for a detailed portrait.</dd>
+          <dt>Highlights &amp; total dot coverage</dt><dd id="coverage-help">Highlights sets how much of the figure uses bright dots; total coverage includes shadow dots. Try 58% / 86%, then increase coverage if features disappear.</dd>
+          <dt>Softness</dt><dd id="softness-help">Smooths the source before making dots. Increase it to quiet texture; lower it to keep small details.</dd>
+          <dt>Local contrast</dt><dd id="contrast-help">Brings out nearby light and dark detail. Increase it for flat lighting; reduce it if skin or edges look noisy.</dd>
+          <dt>Background removal</dt><dd id="background-help">Remove dark tones suppresses low brightness, including dark subject details. For a light background, invert first. Transition softness fades the cutoff instead of making a hard edge.</dd>
+        </dl></details>
+        <label class="range-label" for="rows">Detail <output id="rows-value">48 rows</output></label><input id="rows" aria-describedby="detail-help" type="range" min="16" max="80" step="1" value="48">
+        <label class="range-label" for="bright">Highlights <output id="bright-value">58%</output></label><input id="bright" aria-describedby="coverage-help" type="range" min="0" max="100" step="1" value="58">
+        <label class="range-label" for="mid">Total dot coverage <output id="mid-value">86%</output></label><input id="mid" aria-describedby="coverage-help" type="range" min="0" max="100" step="1" value="86">
+        <label class="range-label" for="blur">Softness <output id="blur-value">4.0</output></label><input id="blur" aria-describedby="softness-help" type="range" min="0" max="10" step="0.5" value="4">
+        <label class="range-label" for="mix">Local contrast <output id="mix-value">0.70</output></label><input id="mix" aria-describedby="contrast-help" type="range" min="0" max="1.2" step="0.05" value="0.7">
+        <label class="check-label"><input id="invert" type="checkbox"> Invert source tones</label>
+        <div class="section-rule"></div><span class="eyebrow">BACKGROUND</span>
+        <p class="hint">Suppress dark tones. Invert first for a light background. This is tonal separation, not automatic cutout.</p>
+        <label class="range-label" for="cutoff">Remove dark tones <output id="cutoff-value">12%</output></label><input id="cutoff" aria-describedby="background-help" type="range" min="0" max="0.9" step="0.01" value="0.12">
+        <label class="range-label" for="feather">Transition softness <output id="feather-value">0%</output></label><input id="feather" aria-describedby="background-help" type="range" min="0" max="0.3" step="0.01" value="0">
+      </fieldset>
+      <p class="sidebar-foot">A bright subject on a dark ground works best. Your original stays untouched.</p>
+    </aside>
+
+    <section id="canvas-workspace" class="canvas-area" aria-label="Portrait preview">
+      <div class="canvas-toolbar"><div><span class="eyebrow">THE WORKING CANVAS</span><h1>A portrait, reduced.</h1></div><div class="view-switch" role="group" aria-label="Preview mode"><button id="art-view" aria-pressed="true">Artwork</button><button id="source-view" aria-pressed="false" disabled>Source</button><button id="compare-view" aria-pressed="false" disabled>Compare</button></div></div>
+      <div class="mobile-quick"><button id="mobile-photo" class="utility-button">Choose photo</button><button id="mobile-adjust" class="utility-button">Adjust controls ↓</button></div><div class="preview-tools"><label class="check-label"><input id="guide" type="checkbox"> Circular PFP guide</label><div class="history-tools"><button id="undo" class="utility-button" disabled title="Undo (Ctrl/Command+Z)">↶ Undo</button><button id="redo" class="utility-button" disabled title="Redo (Ctrl/Command+Shift+Z)">↷ Redo</button></div></div>
+      <div id="drop-zone" class="stage" aria-busy="true">
+        <div class="canvas-frame"><canvas id="preview" width="1024" height="1024" role="img" aria-label="Dot artwork preview"></canvas><canvas id="source-preview" width="1024" height="1024" role="img" aria-label="Cropped source photo; drag to reposition" hidden></canvas><canvas id="animation-preview" width="1024" height="1024" role="img" aria-label="Animated dust portrait" hidden></canvas><canvas id="selection-overlay" width="1024" height="1024" aria-hidden="true" hidden></canvas><div id="region-selector" role="application" tabindex="0" aria-label="Dust selection canvas: arrow keys move, Space paints; Shift plus arrow moves faster" hidden></div><div id="dust-region" aria-hidden="true" hidden></div><div id="motion-divider" aria-hidden="true" hidden></div><div id="motion-labels" aria-hidden="true" hidden><span>STILL</span><span>MOTION</span></div><span id="circle-guide" aria-hidden="true" hidden></span><span id="split-line" aria-hidden="true" hidden></span><span class="corner top-left" aria-hidden="true"></span><span class="corner top-right" aria-hidden="true"></span><span class="corner bottom-left" aria-hidden="true"></span><span class="corner bottom-right" aria-hidden="true"></span></div>
+        <div id="comparison-controls" hidden><label class="range-label" for="comparison">Source / artwork split <output id="comparison-value">50%</output></label><input id="comparison" type="range" min="0" max="100" value="50"></div>
+        <div class="canvas-caption"><span id="canvas-label">STUDY 001 / BUST</span><span>1:1 — DOT LATTICE</span></div>
+      </div>
+      <div id="animation-player" hidden><label class="check-label"><input id="motion-compare" type="checkbox"> Compare still / motion</label><div id="motion-comparison-controls" hidden><label class="range-label" for="motion-split">Still / motion split <output id="motion-split-value">50%</output></label><input id="motion-split" type="range" min="0" max="100" value="50"></div><div class="playback-buttons"><button id="play-animation" class="utility-button" disabled>Play</button><button id="restart-animation" class="utility-button" disabled>Restart</button><output id="animation-time">0.0 / 8.0 s</output></div><label class="visually-hidden" for="animation-scrub">Animation position</label><input id="animation-scrub" type="range" min="0" max="8" step="0.01" value="0" disabled><p id="animation-status" role="status" class="hint">Preparing your loop…</p></div><div class="status-line"><span id="status-dot" class="status-dot" aria-hidden="true"></span><p id="status" role="status" aria-live="polite">Loading the included artwork…</p><span id="dot-count" class="mono"></span></div>
+      <div class="avatar-strip"><div><span class="eyebrow">THE SMALL-SCREEN TEST</span><p>Make sure it still feels like you.</p></div><div class="avatar-sizes"><figure><canvas id="avatar32" width="128" height="128" role="img" aria-label="32 pixel avatar preview"></canvas><figcaption>32 PX</figcaption></figure><figure><canvas id="avatar64" width="128" height="128" role="img" aria-label="64 pixel avatar preview"></canvas><figcaption>64 PX</figcaption></figure><figure><canvas id="avatar96" width="192" height="192" role="img" aria-label="96 pixel avatar preview"></canvas><figcaption>96 PX</figcaption></figure></div></div>
+    </section>
+
+    <aside id="finish-controls" class="panel finish" aria-label="Style and export controls">
+      <span class="eyebrow">04 — FINISH</span><h2>Find your signature.</h2><p class="hint">Start with a palette. Make it yours.</p>
+      <div class="palettes" role="group" aria-label="Color presets"><button class="palette ivory selected" data-palette="ivory" aria-pressed="true"><span aria-hidden="true">●</span> Ivory</button><button class="palette ember" data-palette="ember" aria-pressed="false"><span aria-hidden="true">●</span> Ember</button><button class="palette paper" data-palette="paper" aria-pressed="false"><span aria-hidden="true">●</span> Paper</button></div>
+      <div class="color-controls"><label for="bg">Ground<input id="bg" type="color" value="#161616"></label><label for="ink">Highlights<input id="ink" type="color" value="#f2f2f0"></label><label for="shadow">Shadows<input id="shadow" type="color" value="#70706e"></label></div>
+      <label class="range-label" for="radius">Dot weight <output id="radius-value">1.00×</output></label><input id="radius" type="range" min="0.5" max="1.6" step="0.05" value="1">
+      <div class="section-rule"></div><span class="eyebrow">QUICK STUDIES</span>
+      <div class="studies"><button data-study="soft" disabled><span>01</span> Soft portrait <span>↗</span></button><button data-study="bold" disabled><span>02</span> Bold silhouette <span>↗</span></button><button data-study="fine" disabled><span>03</span> Fine detail <span>↗</span></button></div>
+      <div class="export-section" id="still-export"><span class="eyebrow">05 — TAKE IT WITH YOU</span><label class="range-label" for="size">PNG dimensions</label><select id="size"><option value="512">512 × 512 — Profile picture</option><option value="1024" selected>1024 × 1024 — Standard</option><option value="2048">2048 × 2048 — High resolution</option></select><label class="check-label"><input id="transparent" type="checkbox"> Transparent background (PNG)</label><p class="hint">PNG only. The preview keeps your ground color.</p><button id="preview-export" class="secondary-button" disabled>Preview PNG export</button><button id="export-png" class="primary-button" disabled>Download PNG <span aria-hidden="true">↓</span></button><button id="export-svg" class="secondary-button" disabled>Download SVG <span aria-hidden="true">↓</span></button><p class="hint">Square exports, ready for your profile or website. SVG stays sharp at any size.</p></div>
+      <div class="export-section" id="animation-export" hidden><span class="eyebrow">05 — EXPORT YOUR LOOP</span><p class="hint">A self-contained HTML animation for the web, or a silent MP4 for sharing.</p><label class="range-label" for="videoSize">Video dimensions · 24 fps</label><select id="videoSize"><option value="512">512 × 512 — Quick export</option><option value="1024">1024 × 1024 — High resolution</option></select><label class="check-label"><input id="webAutoplay" type="checkbox" checked> Autoplay on the web</label><p class="hint">Reduced-motion preferences start with a still portrait.</p><button id="export-website" class="secondary-button" disabled>Download website kit ZIP ↓</button><button id="export-html" class="secondary-button" disabled>Download HTML <span aria-hidden="true">↓</span></button><button id="export-video" class="primary-button" disabled>Render MP4 <span aria-hidden="true">↓</span></button><div id="video-progress-area" hidden><progress id="video-progress" max="1" value="0" aria-label="Video export progress"></progress><p id="video-status" class="hint" role="status"></p><button id="cancel-video" class="utility-button">Cancel export</button></div><p class="hint">Rendering stays on this machine. Longer loops and finer portraits take more time.</p></div><div class="privacy-note"><span aria-hidden="true">↳</span><p>Your photo stays on this machine.<br>No account. No external uploads.<br>Settings files exclude your photo.</p></div>
+    </aside>
+  </main>
+  <dialog id="export-dialog" aria-labelledby="export-dialog-title"><div class="dialog-heading"><h2 id="export-dialog-title">PNG export preview</h2><button id="close-export-preview" class="utility-button">Close</button></div><p id="export-preview-summary" class="hint"></p><label class="check-label"><input id="export-actual-size" type="checkbox"> View at actual pixels (scroll for large images)</label><div id="export-preview-stage" class="checkerboard"><canvas id="export-preview-canvas" role="img" aria-label="PNG export preview"></canvas></div><button id="download-preview-png" class="primary-button">Download this PNG ↓</button></dialog>
+  <nav class="mobile-navigation" aria-label="Mobile workspace navigation"><a href="#canvas-workspace">Preview ↑</a><button id="mobile-controls">Adjust</button><button id="mobile-export">Export ↓</button></nav>
+  <footer><span>PHOTO → LATTICE → MOTION</span><span>BUILT ON 0xSero / ascii-art</span><span>STUDIO EDITION · 02</span></footer>
+</body>
+</html>

@@ -5,3 +5,5 @@ frames/
 *.mp4
 work/
 source.png
+.direnv/
+*.dotstudio
